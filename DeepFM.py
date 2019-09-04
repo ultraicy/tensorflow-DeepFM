@@ -120,6 +120,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
             elif self.use_deep:
                 concat_input = self.y_deep
             self.out = tf.add(tf.matmul(concat_input, self.weights["concat_projection"]), self.weights["concat_bias"])
+            
 
             # loss
             if self.loss_type == "logloss":
@@ -154,6 +155,8 @@ class DeepFM(BaseEstimator, TransformerMixin):
 
             # init
             self.saver = tf.train.Saver()
+            tf.add_to_collection('pred_network', self.out)
+            
             init = tf.global_variables_initializer()
             self.sess = self._init_session()
             self.sess.run(init)
@@ -171,9 +174,8 @@ class DeepFM(BaseEstimator, TransformerMixin):
 
 
     def _init_session(self):
-        config = tf.ConfigProto(device_count={"gpu": 0})
-        config.gpu_options.allow_growth = True
-        return tf.Session(config=config)
+        
+        return tf.Session()
 
 
     def _initialize_weights(self):
@@ -281,6 +283,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
             for i in range(total_batch):
                 Xi_batch, Xv_batch, y_batch = self.get_batch(Xi_train, Xv_train, y_train, self.batch_size, i)
                 self.fit_on_batch(Xi_batch, Xv_batch, y_batch)
+                self.saver.save(self.sess, 'model/my-model', global_step=epoch)
 
             # evaluate training and validation datasets
             train_result = self.evaluate(Xi_train, Xv_train, y_train)
